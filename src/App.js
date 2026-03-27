@@ -50,7 +50,7 @@ function freshApp() {
 // ── MASTER USER ──────────────────────────────────────────────────────────────
 // Set your Firebase UID here to enable master access
 // Get your UID from Firebase Console → Authentication → Users
-const MASTER_UID = uH2MmY0aMgXSjmVG3V2WcnYxOUO2;
+const MASTER_UID = "uH2MmY0aMgXSjmVG3V2WcnYxOUO2";
 
 async function loadUserData(uid) {
   try { const s=await getDoc(doc(db,"users",uid)); return s.exists()?s.data().appData:null; } catch { return null; }
@@ -298,7 +298,8 @@ export default function App(){
         // Save user meta for master view
         saveUserMeta(user.uid,{email:user.email,name:user.displayName||user.email,lastLogin:new Date().toISOString()});
         // Check if master
-        if(user.uid===MASTER_UID) setMasterMode(true);
+        console.log("UID login:", user.uid, "MASTER:", MASTER_UID, "match:", user.uid===MASTER_UID);
+if(user.uid===MASTER_UID) setMasterMode(true);
       }
       else setAppData(null);
     });
