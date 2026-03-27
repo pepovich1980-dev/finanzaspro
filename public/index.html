@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="description" content="FinanzasPro - Tu gestor financiero personal" />
+
+    <!-- PWA iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FinanzasPro" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon-192.png" />
+
+    <!-- PWA Android -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="%PUBLIC_URL%/icon-192.png" />
+
+    <title>FinanzasPro</title>
+
+    <style>
+      /* Evita flash blanco al cargar */
+      html, body, #root { background: #0a0d14; height: 100%; }
+      /* Safe area iOS (notch, home bar) */
+      body { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+  </head>
+  <body>
+    <noscript>Necesitas JavaScript para usar FinanzasPro.</noscript>
+    <div id="root"></div>
+    <script>
+      // Registrar Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

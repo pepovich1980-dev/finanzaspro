@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user can read/write their own data
+    // The master user uH2MmY0aMgXSjmVG3V2WcnYxOUO2 can read all users
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId || request.auth.uid == "REPLACE_WITH_YOUR_UID");
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Watchlists: same rules
+    match /watchlists/{userId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId || request.auth.uid == "REPLACE_WITH_YOUR_UID");
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
