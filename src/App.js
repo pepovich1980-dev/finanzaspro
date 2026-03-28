@@ -2608,39 +2608,36 @@ function AnalysesView({isMaster}){
     </div>
 
     {showForm&&isMaster&&<Card style={{marginBottom:14,border:`1px solid ${ACC}44`}}>
-      <div className="title" style={{fontSize:12,fontWeight:700,color:ACC,marginBottom:14}}>Nuevo análisis</div>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Título</div>
-          <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ej: Perspectivas Q2 2025 Renta Variable"/>
-        </div>
-        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Categoría</div>
-          <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
-            <option value="">Sin categoría</option>
-            {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div>
-  <div style={{fontSize:11,color:MUT,marginBottom:4}}>Tipo</div>
-  <select value={form.type||"text"} onChange={e=>setForm(p=>({...p,type:e.target.value}))} style={{marginBottom:10}}>
-    <option value="text">📝 Texto</option>
-    <option value="pdf">📄 PDF (Google Drive)</option>
-  </select>
-</div>
-{(!form.type||form.type==="text")&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
-  <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
-</div>}
-{form.type==="pdf"&&<div>
-  <div style={{fontSize:11,color:MUT,marginBottom:4}}>URL del PDF (Google Drive)</div>
-  <input value={form.pdfUrl||""} onChange={e=>setForm(p=>({...p,pdfUrl:e.target.value}))} placeholder="https://drive.google.com/file/d/ID/preview"/>
-  <div style={{fontSize:10,color:MUT,marginTop:4}}>En Drive: compartir → cualquiera con el enlace → copia el ID y pon: drive.google.com/file/d/ID/preview</div>
-</div>}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
-        </div>
-        <button onClick={handleSave} disabled={saving||!form.title.trim()||!form.content.trim()}style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
-          {saving?"Guardando...":"💾 Publicar análisis"}
-        </button>
-      </div>
-    </Card>}
-
+  <div className="title" style={{fontSize:12,fontWeight:700,color:ACC,marginBottom:14}}>Nuevo análisis</div>
+  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Título</div>
+      <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ej: Perspectivas Q2 2025"/>
+    </div>
+    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Categoría</div>
+      <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+        <option value="">Sin categoría</option>
+        {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+      </select>
+    </div>
+    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Tipo</div>
+      <select value={form.type||"text"} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
+        <option value="text">📝 Texto</option>
+        <option value="pdf">📄 PDF (Google Drive)</option>
+      </select>
+    </div>
+    {(!form.type||form.type==="text")&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
+      <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
+    </div>}
+    {form.type==="pdf"&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>URL del PDF (Google Drive)</div>
+      <input value={form.pdfUrl||""} onChange={e=>setForm(p=>({...p,pdfUrl:e.target.value}))} placeholder="https://drive.google.com/file/d/ID/preview"/>
+      <div style={{fontSize:10,color:MUT,marginTop:4}}>En Drive: compartir → cualquiera con el enlace → pon: drive.google.com/file/d/ID/preview</div>
+    </div>}
+    <button onClick={handleSave} disabled={saving||!form.title.trim()||((!form.type||form.type==="text")&&!form.content.trim())||(form.type==="pdf"&&!form.pdfUrl?.trim())} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
+      {saving?"Guardando...":"💾 Publicar análisis"}
+    </button>
+  </div>
+</Card>}
+  
     {loading?<Card style={{textAlign:"center",padding:32}}><div style={{fontSize:32,marginBottom:8}}>⏳</div><div style={{color:MUT}}>Cargando análisis...</div></Card>:
     analyses.length===0?<Card style={{textAlign:"center",padding:32}}>
       <div style={{fontSize:32,marginBottom:8}}>📄</div>
