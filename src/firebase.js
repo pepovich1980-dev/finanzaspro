@@ -14,12 +14,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey:            "PEGA_AQUI_TU_API_KEY",
-  authDomain:        "PEGA_AQUI_TU_AUTH_DOMAIN",
-  projectId:         "PEGA_AQUI_TU_PROJECT_ID",
-  storageBucket:     "PEGA_AQUI_TU_STORAGE_BUCKET",
-  messagingSenderId: "PEGA_AQUI_TU_MESSAGING_SENDER_ID",
-  appId:             "PEGA_AQUI_TU_APP_ID"
+  apiKey:            "AIzaSyBYtVg4KF6Y6siabOM4LZJMepSQ9t0LhBk",
+  authDomain:        "finanzaspro-c44d6.firebaseapp.com",
+  projectId:         "finanzaspro-c44d6",
+  storageBucket:     "finanzaspro-c44d6.firebasestorage.app",
+  messagingSenderId: "96424716715",
+  appId:             "1:96424716715:web:b86bb2c6aaf17f64c50aee"
 };
 
 const app = initializeApp(firebaseConfig);
