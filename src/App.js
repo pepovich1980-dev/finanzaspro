@@ -2548,10 +2548,18 @@ function AnalysisDetailView({analysis,onClose,isMaster,onDelete}){
   return <BottomSheet title={analysis.title} sub={new Date(analysis.createdAt).toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})} onClose={onClose}>
     <div style={{padding:"0 16px 80px"}}>
       {analysis.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,display:"inline-block",marginBottom:12}}>{analysis.category}</span>}
-      <div style={{fontSize:13,lineHeight:1.8,color:TXT,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-        {analysis.content}
-      </div>
-      {isMaster&&<div style={{marginTop:24}}>
+      {analysis.pdfUrl
+        ?<iframe
+            src={analysis.pdfUrl}
+            style={{width:"100%",height:"70vh",border:"none",borderRadius:8,background:SRF}}
+            title={analysis.title}
+            allow="autoplay"
+          />
+        :<div style={{fontSize:13,lineHeight:1.8,color:TXT,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+          {analysis.content}
+        </div>
+      }
+      {isMaster&&<div style={{marginTop:16}}>
         <button onClick={()=>{onDelete(analysis.id);onClose();}} style={{width:"100%",padding:"12px",borderRadius:10,background:RED+"22",color:RED,border:`1px solid ${RED}44`,fontSize:13,fontWeight:700}}>
           🗑 Eliminar análisis
         </button>
@@ -2565,7 +2573,7 @@ function AnalysesView({isMaster}){
   const [loading,setLoading]=useState(true);
   const [selected,setSelected]=useState(null);
   const [showForm,setShowForm]=useState(false);
-  const [form,setForm]=useState({title:"",category:"",content:""});
+  const [form,setForm]=useState({title:"",category:"",content:"",type:"text",pdfUrl:""});
   const [saving,setSaving]=useState(false);
   const CATEGORIES=["Renta Variable","Renta Fija","Macro","Sectorial","Divisa","Cripto","Otro"];
 
@@ -2611,10 +2619,23 @@ function AnalysesView({isMaster}){
             {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
-          <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
+        <div>
+  <div style={{fontSize:11,color:MUT,marginBottom:4}}>Tipo</div>
+  <select value={form.type||"text"} onChange={e=>setForm(p=>({...p,type:e.target.value}))} style={{marginBottom:10}}>
+    <option value="text">📝 Texto</option>
+    <option value="pdf">📄 PDF (Google Drive)</option>
+  </select>
+</div>
+{(!form.type||form.type==="text")&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
+  <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
+</div>}
+{form.type==="pdf"&&<div>
+  <div style={{fontSize:11,color:MUT,marginBottom:4}}>URL del PDF (Google Drive)</div>
+  <input value={form.pdfUrl||""} onChange={e=>setForm(p=>({...p,pdfUrl:e.target.value}))} placeholder="https://drive.google.com/file/d/ID/preview"/>
+  <div style={{fontSize:10,color:MUT,marginTop:4}}>En Drive: compartir → cualquiera con el enlace → copia el ID y pon: drive.google.com/file/d/ID/preview</div>
+</div>}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
         </div>
-        <button onClick={handleSave} disabled={saving||!form.title.trim()||!form.content.trim()} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
+        <button onClick={handleSave} disabled={saving||!form.title.trim()||!form.content.trim()}style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
           {saving?"Guardando...":"💾 Publicar análisis"}
         </button>
       </div>
