@@ -297,7 +297,18 @@ export default function App(){
         setAppData(d||freshApp());
         // Save user meta for master view
         saveUserMeta(user.uid,{email:user.email,name:user.displayName||user.email,lastLogin:new Date().toISOString()});
-        // Check if master
+        // Ask for name if missing
+if(!user.displayName){
+  setTimeout(()=>{
+    const n=prompt("👋 ¡Hola! Para personalizar tu experiencia, ¿cómo te llamas?");
+    if(n&&n.trim()){
+      updateProfile(user,{displayName:n.trim()}).then(()=>{
+        saveUserMeta(user.uid,{email:user.email,name:n.trim(),lastLogin:new Date().toISOString()});
+      });
+    }
+  },1500);
+}        
+       // Check if master
         console.log("UID login:", user.uid, "MASTER:", MASTER_UID, "match:", user.uid===MASTER_UID);
 if(user.uid===MASTER_UID) setMasterMode(true);
       }
@@ -362,7 +373,7 @@ if(user.uid===MASTER_UID) setMasterMode(true);
       {tab==="budget" &&<BudgetTab appData={appData} upd={upd} year={year} setYear={setYear} month={month} setMonth={setMonth} bud={bud} md={md} iP={iP} iR={iR} eP={eP} eR={eR} cats={cats}/>}
       {tab==="balance"&&<BalanceGroupTab appData={appData} upd={upd}/>}
       {tab==="markets"&&<MarketsTab/>}
-      {tab==="tools"   &&<ToolsTab initTool={initTool}/>}
+      {tab==="tools"   &&<ToolsTab initTool={initTool} masterMode={masterMode}/>}
       {tab==="master"  &&masterMode&&<MasterView
         users={masterUserList}
         loading={masterLoadingUsers}
@@ -2511,7 +2522,129 @@ function ScreenerView(){
     </Card>}
   </div>;
 }
+// ── ANALYSES ──────────────────────────────────────────────────────────────────
+async function loadAnalyses(){
+  try{
+    const{collection,getDocs,query,orderBy}=await import("firebase/firestore");
+    const q=query(collection(db,"analyses"),orderBy("createdAt","desc"));
+    const snap=await getDocs(q);
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){console.error(e);return[];}
+}
+async function saveAnalysis(data){
+  try{
+    const{collection,addDoc}=await import("firebase/firestore");
+    await addDoc(collection(db,"analyses"),{...data,createdAt:new Date().toISOString()});
+  }catch(e){console.error(e);}
+}
+async function deleteAnalysis(id){
+  try{
+    const{doc,deleteDoc}=await import("firebase/firestore");
+    await deleteDoc(doc(db,"analyses",id));
+  }catch(e){console.error(e);}
+}
 
+function AnalysisDetailView({analysis,onClose,isMaster,onDelete}){
+  return <BottomSheet title={analysis.title} sub={new Date(analysis.createdAt).toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})} onClose={onClose}>
+    <div style={{padding:"0 16px 80px"}}>
+      {analysis.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,display:"inline-block",marginBottom:12}}>{analysis.category}</span>}
+      <div style={{fontSize:13,lineHeight:1.8,color:TXT,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+        {analysis.content}
+      </div>
+      {isMaster&&<div style={{marginTop:24}}>
+        <button onClick={()=>{onDelete(analysis.id);onClose();}} style={{width:"100%",padding:"12px",borderRadius:10,background:RED+"22",color:RED,border:`1px solid ${RED}44`,fontSize:13,fontWeight:700}}>
+          🗑 Eliminar análisis
+        </button>
+      </div>}
+    </div>
+  </BottomSheet>;
+}
+
+function AnalysesView({isMaster}){
+  const [analyses,setAnalyses]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [showForm,setShowForm]=useState(false);
+  const [form,setForm]=useState({title:"",category:"",content:""});
+  const [saving,setSaving]=useState(false);
+  const CATEGORIES=["Renta Variable","Renta Fija","Macro","Sectorial","Divisa","Cripto","Otro"];
+
+  useEffect(()=>{
+    loadAnalyses().then(a=>{setAnalyses(a);setLoading(false);});
+  },[]);
+
+  async function handleSave(){
+    if(!form.title.trim()||!form.content.trim())return;
+    setSaving(true);
+    await saveAnalysis(form);
+    const updated=await loadAnalyses();
+    setAnalyses(updated);
+    setForm({title:"",category:"",content:""});
+    setShowForm(false);
+    setSaving(false);
+  }
+
+  async function handleDelete(id){
+    await deleteAnalysis(id);
+    setAnalyses(prev=>prev.filter(a=>a.id!==id));
+  }
+
+  return <div>
+    {selected&&<AnalysisDetailView analysis={selected} onClose={()=>setSelected(null)} isMaster={isMaster} onDelete={handleDelete}/>}
+
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div className="title" style={{fontSize:11,color:ACC,fontWeight:700,textTransform:"uppercase",letterSpacing:".06em"}}>📄 Análisis</div>
+      {isMaster&&<button onClick={()=>setShowForm(s=>!s)} style={{padding:"7px 14px",borderRadius:8,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:12,fontWeight:700}}>
+        {showForm?"✕ Cancelar":"+ Nuevo análisis"}
+      </button>}
+    </div>
+
+    {showForm&&isMaster&&<Card style={{marginBottom:14,border:`1px solid ${ACC}44`}}>
+      <div className="title" style={{fontSize:12,fontWeight:700,color:ACC,marginBottom:14}}>Nuevo análisis</div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Título</div>
+          <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ej: Perspectivas Q2 2025 Renta Variable"/>
+        </div>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Categoría</div>
+          <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+            <option value="">Sin categoría</option>
+            {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
+          <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
+        </div>
+        <button onClick={handleSave} disabled={saving||!form.title.trim()||!form.content.trim()} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
+          {saving?"Guardando...":"💾 Publicar análisis"}
+        </button>
+      </div>
+    </Card>}
+
+    {loading?<Card style={{textAlign:"center",padding:32}}><div style={{fontSize:32,marginBottom:8}}>⏳</div><div style={{color:MUT}}>Cargando análisis...</div></Card>:
+    analyses.length===0?<Card style={{textAlign:"center",padding:32}}>
+      <div style={{fontSize:32,marginBottom:8}}>📄</div>
+      <div className="title" style={{fontSize:14,fontWeight:700,marginBottom:6}}>Sin análisis publicados</div>
+      <div style={{fontSize:12,color:MUT}}>{isMaster?"Pulsa '+ Nuevo análisis' para publicar el primero":"Próximamente aparecerán análisis aquí"}</div>
+    </Card>:
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {analyses.map(a=>(
+        <Card key={a.id} onClick={()=>setSelected(a)} style={{cursor:"pointer",borderLeft:`3px solid ${ACC}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="title" style={{fontSize:14,fontWeight:800,marginBottom:4}}>{a.title}</div>
+              <div style={{fontSize:10,color:MUT}}>{new Date(a.createdAt).toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})}</div>
+            </div>
+            {a.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700,flexShrink:0,marginLeft:8}}>{a.category}</span>}
+          </div>
+          <div style={{fontSize:12,color:MUT,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.6}}>
+            {a.content}
+          </div>
+          <div style={{fontSize:11,color:ACC,fontWeight:700,marginTop:8}}>Leer más →</div>
+        </Card>
+      ))}
+    </div>}
+  </div>;
+}
 function DatosClienteView(){
   const [form,setForm]=useState(()=>{
     try{const s=localStorage.getItem("fp_client");return s?JSON.parse(s):{nombre:"",edad:"",email:"",telefono:"",ocupacion:"",ingresosMensuales:"",gastosMensuales:"",patrimonioBruto:"",deudas:"",objetivos:"",horizonte:"",notas:""};}
@@ -2544,7 +2677,7 @@ function DatosClienteView(){
 }
 
 // ── TOOLS TAB ─────────────────────────────────────────────────────────────────
-function ToolsTab({initTool="profile"}){
+function ToolsTab({initTool="profile",masterMode=false}){
   const [tool,setTool]=useState(initTool);
   useEffect(()=>{setTool(initTool);},[initTool]);
 
@@ -2588,7 +2721,7 @@ function ToolsTab({initTool="profile"}){
 
   return <div className="su">
     <div style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap"}}>
-      {[["datos","👤"],["profile","🧠"],["calculator","📐"],["screener","🔎"],["watchlist","⭐"]].map(([v,ico])=>(
+    {[["datos","👤"],["profile","🧠"],["calculator","📐"],["screener","🔎"],["watchlist","⭐"],["analyses","📄"]].map(([v,ico])=>(      
         <button key={v} onClick={()=>setTool(v)} style={{width:40,height:40,borderRadius:9,background:tool===v?ACC:"transparent",border:`1.5px solid ${tool===v?ACC:BOR}`,fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",color:tool===v?"#fff":MUT}}>
           {ico}
         </button>
@@ -2598,7 +2731,12 @@ function ToolsTab({initTool="profile"}){
     {tool==="datos"&&<DatosClienteView/>}
     {tool==="screener"&&<ScreenerView/>}
     {tool==="watchlist"&&<WatchlistView/>}
+    {tool==="analyses"&&<AnalysesView isMaster={masterMode}/>}
+```
 
+Guarda y haz push:
+```
+git add src\App.js
     {tool==="profile"&&<>
       {!showResult&&<>
         <div className="title" style={{fontSize:11,color:ACC,fontWeight:700,textTransform:"uppercase",letterSpacing:".06em",marginBottom:14}}>Test de perfil inversor</div>
