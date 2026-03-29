@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from "recharts";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "firebase/auth";
+import { doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit, addDoc, deleteDoc } from "firebase/firestore";
 import { doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -2532,18 +2532,7 @@ async function loadAnalyses(){
   }catch(e){console.error(e);return[];}
 }
 async function saveAnalysis(data){
-  try{
-    const{collection,addDoc}=await import("firebase/firestore");
-    await addDoc(collection(db,"analyses"),{...data,createdAt:new Date().toISOString()});
-  }catch(e){console.error(e);}
-}
-async function deleteAnalysis(id){
-  try{
-    const{doc,deleteDoc}=await import("firebase/firestore");
-    await deleteDoc(doc(db,"analyses",id));
-  }catch(e){console.error(e);}
-}
-
+  c
 function AnalysisDetailView({analysis,onClose,isMaster,onDelete}){
   return <BottomSheet title={analysis.title} sub={new Date(analysis.createdAt).toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})} onClose={onClose}>
     <div style={{padding:"0 16px 80px"}}>
