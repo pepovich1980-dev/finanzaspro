@@ -2916,6 +2916,12 @@ const PERF_PERIODS=[
   {key:"3m",label:"3M"},{key:"6m",label:"6M"},{key:"ytd",label:"YTD"},
   {key:"1y",label:"1A"},{key:"3y",label:"3A"},{key:"5y",label:"5A"},{key:"10y",label:"10A"},
 ];
+const PERF_SHORT=[{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1m",label:"1M"},{key:"1y",label:"1A"},{key:"3y",label:"3A"}];
+```
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2}}>
+            {PERF_SHORT.map(({key})=><div key={key} style={{textAlign:"center"}}><PerfBadge val={perfData[key]}/></div>)}
+          </div>
+```
 const TECH_FREQS=[{key:"5m",label:"5m"},{key:"1h",label:"1h"},{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1mo",label:"1M"}];
 const SIG={"Compra fuerte":{c:"#27ae60",bg:"#27ae6018",s:"↑↑"},"Compra":{c:"#2ecc71",bg:"#2ecc7118",s:"↑"},"Neutral":{c:"#95a5a6",bg:"#95a5a618",s:"→"},"Venta":{c:"#e67e22",bg:"#e67e2218",s:"↓"},"Venta fuerte":{c:"#c0392b",bg:"#c0392b18",s:"↓↓"}};
 const IND_LABEL={rsi:"RSI(14)",macd:"MACD",bollinger:"Bollinger",stochastic:"Estocástico",williams:"Williams %R",roc:"ROC(12)",ema9_21:"EMA 9/21",ema50:"EMA 50",ema200:"EMA 200"};
@@ -2969,7 +2975,8 @@ function MembersDrawer({sym,onClose}){
         <div style={{display:"flex",gap:4,padding:"6px 0",borderBottom:`1px solid ${BOR}`,marginBottom:4}}>
           <div style={{flex:1,fontSize:9,color:MUT,fontWeight:700}}>ACTIVO</div>
           <div style={{width:55,textAlign:"right",fontSize:9,color:MUT,fontWeight:700}}>PRECIO</div>
-          {PERF_PERIODS.map(({label})=><div key={label} style={{width:32,textAlign:"center",fontSize:8,color:MUT,fontWeight:700,flexShrink:0}}>{label}</div>)}
+          {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={pf?.[key]}/></div>)}
+```
         </div>
         {members.map(msym=>{
           const d=prices[msym],pf=perf[msym];
@@ -3020,6 +3027,11 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
       <span style={{fontSize:10,fontWeight:800,color:MUT,textTransform:"uppercase",letterSpacing:".08em"}}>{item.group}</span>
     </div>}
     <div style={{paddingBottom:10,marginBottom:2,borderBottom:`1px solid ${BOR}22`}}>
+{mode==="perf"&&isFirstInGroup&&<div style={{display:"flex",gap:2,padding:"4px 0",marginBottom:2}}>
+        <div style={{flex:1}}/>
+        <div style={{width:30,textAlign:"right",fontSize:8,color:MUT,fontWeight:700}}>PRECIO</div>
+        {PERF_SHORT.map(({label})=><div key={label} style={{width:36,textAlign:"center",fontSize:8,color:MUT,fontWeight:700,flexShrink:0}}>{label}</div>)}
+      </div>}
       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,cursor:"pointer"}} onClick={()=>setShowDetail(true)}>
         <span style={{fontSize:16,lineHeight:1,flexShrink:0}}>{item.flag}</span>
         <div style={{flex:1,minWidth:0}}>
@@ -3030,24 +3042,17 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
           </div>
           <div style={{fontSize:9,color:MUT}}>{item.sym}</div>
         </div>
-        <div style={{textAlign:"right",flexShrink:0}}>
-          <div style={{fontSize:14,fontWeight:800,fontFamily:"monospace",color:d?TXT:MUT}}>{p}</div>
-          {d&&pct!=null&&<div style={{fontSize:10,color:pct>=0?GRN:RED,fontWeight:700}}>{pct>=0?"+":""}{pct.toFixed(2)}%</div>}
+           <div style={{textAlign:"right",flexShrink:0,minWidth:52}}>
+          <div style={{fontSize:13,fontWeight:800,fontFamily:"monospace",color:d?TXT:MUT}}>{p}</div>
+          {d&&pct!=null&&<div style={{fontSize:9,color:pct>=0?GRN:RED,fontWeight:700}}>{pct>=0?"+":""}{pct.toFixed(2)}%</div>}
         </div>
+        {mode==="perf"&&<>
+          {perfLoading?<div style={{fontSize:9,color:MUT,width:180}}>...</div>:
+          perfData?<div style={{display:"flex",gap:2,flexShrink:0}}>
+            {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perfData[key]}/></div>)}
+          </div>:<div style={{fontSize:9,color:MUT}}>Sin datos</div>}
+        </>}
       </div>
-
-      {mode==="perf"&&<>
-        {perfLoading?<div style={{fontSize:9,color:MUT}}>⏳</div>:
-        perfData?<>
-          {/* 2 rows of 5 badges each - fits perfectly on mobile */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2,marginBottom:2}}>
-            {PERF_PERIODS.slice(0,5).map(({key})=><div key={key} style={{textAlign:"center"}}><PerfBadge val={perfData[key]}/></div>)}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2}}>
-            {PERF_PERIODS.slice(5,10).map(({key})=><div key={key} style={{textAlign:"center"}}><PerfBadge val={perfData[key]}/></div>)}
-          </div>
-        </>:<div style={{fontSize:9,color:MUT}}>Sin datos</div>}
-      </>}
 
       {mode==="tech"&&<>
         {loadingTech?<div style={{fontSize:9,color:MUT,padding:"4px 0"}}>⏳ Calculando...</div>:
