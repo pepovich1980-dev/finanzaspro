@@ -1766,7 +1766,7 @@ function AssetDetailCard({sym,name,onClose}){
       <Card style={{marginBottom:14}}>
         <div className="title" style={{fontSize:11,fontWeight:700,color:ACC,marginBottom:10}}>📈 RENDIMIENTO HISTÓRICO</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-          {[{key:"1y",label:"1 Año"},{key:"3y",label:"3 Años"},{key:"5y",label:"5 Años"}].map(({key,label})=>{
+          {[{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1m",label:"1M"},{key:"3m",label:"3M"},{key:"6m",label:"6M"},{key:"1y",label:"1A"},{key:"3y",label:"3A"},{key:"5y",label:"5A"},{key:"10y",label:"10A"}].map(({key,label})=>{
             const v=perfData?.[key];
             const c=v!=null?(v>=0?GRN:RED):MUT;
             return <div key={key} style={{background:SRF,borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
@@ -1782,7 +1782,7 @@ function AssetDetailCard({sym,name,onClose}){
         <div className="title" style={{fontSize:11,fontWeight:700,color:ACC,marginBottom:10}}>📐 ANÁLISIS TÉCNICO</div>
         {loading?<div style={{textAlign:"center",padding:12,color:MUT,fontSize:11}}>⏳ Calculando...</div>:
         techSignals?<>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
             {TECH_FREQS_ADC.map(({key,label})=>{
               const s=techSignals[key];
               const m=s?SIG_ADC[s.signal]||SIG_ADC["Neutral"]:null;
@@ -2916,7 +2916,7 @@ const PERF_PERIODS=[
   {key:"3m",label:"3M"},{key:"6m",label:"6M"},{key:"ytd",label:"YTD"},
   {key:"1y",label:"1A"},{key:"3y",label:"3A"},{key:"5y",label:"5A"},{key:"10y",label:"10A"},
 ];
-const PERF_SHORT=[{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1m",label:"1M"},{key:"1y",label:"1A"},{key:"3y",label:"3A"}];
+const PERF_SHORT=[{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1m",label:"1M"},{key:"1y",label:"1A"}];
 const TECH_FREQS=[{key:"5m",label:"5m"},{key:"1h",label:"1h"},{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1mo",label:"1M"}];
 const SIG={"Compra fuerte":{c:"#27ae60",bg:"#27ae6018",s:"↑↑"},"Compra":{c:"#2ecc71",bg:"#2ecc7118",s:"↑"},"Neutral":{c:"#95a5a6",bg:"#95a5a618",s:"→"},"Venta":{c:"#e67e22",bg:"#e67e2218",s:"↓"},"Venta fuerte":{c:"#c0392b",bg:"#c0392b18",s:"↓↓"}};
 const IND_LABEL={rsi:"RSI(14)",macd:"MACD",bollinger:"Bollinger",stochastic:"Estocástico",williams:"Williams %R",roc:"ROC(12)",ema9_21:"EMA 9/21",ema50:"EMA 50",ema200:"EMA 200"};
@@ -3035,7 +3035,6 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
             <div onClick={e=>e.stopPropagation()}><StarButton sym={item.sym} name={item.name} size={12}/></div>
             {item.hasMembers&&<button onClick={e=>{e.stopPropagation();setShowMembers(true);}} style={{fontSize:10,color:MUT,background:SRF,border:`1px solid ${BOR}`,borderRadius:4,padding:"0 4px",lineHeight:"16px",flexShrink:0}}>📋</button>}
           </div>
-          <div style={{fontSize:9,color:MUT}}>{item.sym}</div>
         </div>
            <div style={{textAlign:"right",flexShrink:0,minWidth:52}}>
           <div style={{fontSize:13,fontWeight:800,fontFamily:"monospace",color:d?TXT:MUT}}>{p}</div>
@@ -3044,7 +3043,7 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
         {mode==="perf"&&<>
           {perfLoading?<div style={{fontSize:9,color:MUT,width:180}}>...</div>:
           perfData?<div style={{display:"flex",gap:2,flexShrink:0}}>
-            {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perfData[key]}/></div>)}
+            {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perf[msym]?.[key]}/></div>)}
           </div>:<div style={{fontSize:9,color:MUT}}>Sin datos</div>}
         </>}
       </div>
