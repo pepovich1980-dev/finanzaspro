@@ -2588,7 +2588,7 @@ function AnalysesView({isMaster}){
     loadAnalyses().then(a=>{setAnalyses(a);setLoading(false);});
   },[]);
 
-  async function handleSave(){
+  async function handleSave(){console.log("form:", form);
     if(!form.title.trim()||!form.content.trim())return;
     setSaving(true);
     await saveAnalysis(form);
