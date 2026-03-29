@@ -2550,7 +2550,14 @@ function AnalysisDetailView({analysis,onClose,isMaster,onDelete}){
       {analysis.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,display:"inline-block",marginBottom:12}}>{analysis.category}</span>}
       {analysis.pdfUrl
         ?<iframe
-            src={analysis.pdfUrl}
+            src={analysis.pdfUrl.includes("drive.google.com")?`https://docs.google.com/viewer?url=${encodeURIComponent(analysis.pdfUrl)}&embedded=true`:analysis.pdfUrl}
+```
+
+Guarda y haz push:
+```
+git add src\App.js
+git commit -m "fix pdf viewer"
+git push https://pepovich1980-dev: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@github.com/pepovich1980-dev/finanzaspro.git main
             style={{width:"100%",height:"70vh",border:"none",borderRadius:8,background:SRF}}
             title={analysis.title}
             allow="autoplay"
