@@ -2917,11 +2917,6 @@ const PERF_PERIODS=[
   {key:"1y",label:"1A"},{key:"3y",label:"3A"},{key:"5y",label:"5A"},{key:"10y",label:"10A"},
 ];
 const PERF_SHORT=[{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1m",label:"1M"},{key:"1y",label:"1A"},{key:"3y",label:"3A"}];
-```
-          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2}}>
-            {PERF_SHORT.map(({key})=><div key={key} style={{textAlign:"center"}}><PerfBadge val={perfData[key]}/></div>)}
-          </div>
-```
 const TECH_FREQS=[{key:"5m",label:"5m"},{key:"1h",label:"1h"},{key:"1d",label:"1D"},{key:"1w",label:"1S"},{key:"1mo",label:"1M"}];
 const SIG={"Compra fuerte":{c:"#27ae60",bg:"#27ae6018",s:"↑↑"},"Compra":{c:"#2ecc71",bg:"#2ecc7118",s:"↑"},"Neutral":{c:"#95a5a6",bg:"#95a5a618",s:"→"},"Venta":{c:"#e67e22",bg:"#e67e2218",s:"↓"},"Venta fuerte":{c:"#c0392b",bg:"#c0392b18",s:"↓↓"}};
 const IND_LABEL={rsi:"RSI(14)",macd:"MACD",bollinger:"Bollinger",stochastic:"Estocástico",williams:"Williams %R",roc:"ROC(12)",ema9_21:"EMA 9/21",ema50:"EMA 50",ema200:"EMA 200"};
