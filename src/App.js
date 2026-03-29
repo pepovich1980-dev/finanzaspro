@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from "recharts";
-import { doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit, addDoc, deleteDoc } from "firebase/firestore";
 import { doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -2110,7 +2109,7 @@ function WatchlistView(){
     }
 
     {wl.data.lists.length>1&&selList!=="default"&&<div style={{textAlign:"right",marginTop:8}}>
-      <button onClick={()=>{wl.removeList(selList);setSelList(wl.data.lists[0]?.id||"default");}} style={{fontSize:11,color:RED,background:RED+"18",border:`1px solid ${RED}44`,borderRadius:6,padding:"3px 10px"}}>🗑 Eliminar lista</button>
+      <button onClick={()=>{wl.removeList(selList);setSelList(wl.data.lists[0]?.id||"default");}} style={{fontSize:11,color:RED,background:RED+"18",border:`1px solid ${RED}44`, borderRadius:6,padding:"3px 10px"}}>🗑 Eliminar lista</button>
     </div>}
   </div>;
 }
@@ -2525,45 +2524,33 @@ function ScreenerView(){
 // ── ANALYSES ──────────────────────────────────────────────────────────────────
 async function loadAnalyses(){
   try{
-    const{collection,getDocs,query,orderBy}=await import("firebase/firestore");
     const q=query(collection(db,"analyses"),orderBy("createdAt","desc"));
     const snap=await getDocs(q);
     return snap.docs.map(d=>({id:d.id,...d.data()}));
   }catch(e){console.error(e);return[];}
 }
 async function saveAnalysis(data){
-  c
+  try{await addDoc(collection(db,"analyses"),{...data,createdAt:new Date().toISOString()});}catch(e){console.error(e);}
+}
+async function deleteAnalysis(id){
+  try{await deleteDoc(doc(db,"analyses",id));}catch(e){console.error(e);}
+}
 function AnalysisDetailView({analysis,onClose,isMaster,onDelete}){
   return <BottomSheet title={analysis.title} sub={new Date(analysis.createdAt).toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})} onClose={onClose}>
     <div style={{padding:"0 16px 80px"}}>
       {analysis.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,display:"inline-block",marginBottom:12}}>{analysis.category}</span>}
       {analysis.pdfUrl
-        ?<iframe
-            src={analysis.pdfUrl.includes("drive.google.com")?`https://docs.google.com/viewer?url=${encodeURIComponent(analysis.pdfUrl)}&embedded=true`:analysis.pdfUrl}
-```
-
-Guarda y haz push:
-```
-git add src\App.js
-git commit -m "fix pdf viewer"
-git push https://pepovich1980-dev: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@github.com/pepovich1980-dev/finanzaspro.git main
-            style={{width:"100%",height:"70vh",border:"none",borderRadius:8,background:SRF}}
-            title={analysis.title}
-            allow="autoplay"
-          />
-        :<div style={{fontSize:13,lineHeight:1.8,color:TXT,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-          {analysis.content}
-        </div>
+        ?<iframe src={analysis.pdfUrl.includes("drive.google.com")?"https://docs.google.com/viewer?url="+encodeURIComponent(analysis.pdfUrl)+"&embedded=true":analysis.pdfUrl} style={{width:"100%",height:"70vh",border:"none",borderRadius:8,background:SRF}} title={analysis.title} allow="autoplay"/>
+        :<div style={{fontSize:13,lineHeight:1.8,color:TXT,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{analysis.content}</div>
       }
       {isMaster&&<div style={{marginTop:16}}>
-        <button onClick={()=>{onDelete(analysis.id);onClose();}} style={{width:"100%",padding:"12px",borderRadius:10,background:RED+"22",color:RED,border:`1px solid ${RED}44`,fontSize:13,fontWeight:700}}>
-          🗑 Eliminar análisis
+        <button onClick={()=>{onDelete(analysis.id);onClose();}} style={{width:"100%",padding:"12px",borderRadius:10,background:RED+"22",color:RED,border:"1px solid "+RED+"44",fontSize:13,fontWeight:700}}>
+          Eliminar analisis
         </button>
       </div>}
     </div>
   </BottomSheet>;
 }
-
 function AnalysesView({isMaster}){
   const [analyses,setAnalyses]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -2572,77 +2559,69 @@ function AnalysesView({isMaster}){
   const [form,setForm]=useState({title:"",category:"",content:"",type:"text",pdfUrl:""});
   const [saving,setSaving]=useState(false);
   const CATEGORIES=["Renta Variable","Renta Fija","Macro","Sectorial","Divisa","Cripto","Otro"];
-
-  useEffect(()=>{
-    loadAnalyses().then(a=>{setAnalyses(a);setLoading(false);});
-  },[]);
-
-  async function handleSave(){console.log("form:", form);
-    if(!form.title.trim()||!form.content.trim())return;
+  useEffect(()=>{loadAnalyses().then(a=>{setAnalyses(a);setLoading(false);});},[]);
+  async function handleSave(){
+    if(!form.title.trim())return;
+    if(form.type==="text"&&!form.content.trim())return;
+    if(form.type==="pdf"&&!form.pdfUrl?.trim())return;
     setSaving(true);
     await saveAnalysis(form);
     const updated=await loadAnalyses();
     setAnalyses(updated);
-    setForm({title:"",category:"",content:""});
+    setForm({title:"",category:"",content:"",type:"text",pdfUrl:""});
     setShowForm(false);
     setSaving(false);
   }
-
   async function handleDelete(id){
     await deleteAnalysis(id);
     setAnalyses(prev=>prev.filter(a=>a.id!==id));
   }
-
   return <div>
     {selected&&<AnalysisDetailView analysis={selected} onClose={()=>setSelected(null)} isMaster={isMaster} onDelete={handleDelete}/>}
-
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <div className="title" style={{fontSize:11,color:ACC,fontWeight:700,textTransform:"uppercase",letterSpacing:".06em"}}>📄 Análisis</div>
-      {isMaster&&<button onClick={()=>setShowForm(s=>!s)} style={{padding:"7px 14px",borderRadius:8,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:12,fontWeight:700}}>
-        {showForm?"✕ Cancelar":"+ Nuevo análisis"}
+      <div className="title" style={{fontSize:11,color:ACC,fontWeight:700,textTransform:"uppercase",letterSpacing:".06em"}}>Analisis</div>
+      {isMaster&&<button onClick={()=>setShowForm(s=>!s)} style={{padding:"7px 14px",borderRadius:8,background:"linear-gradient(135deg,"+ACC+",#922b21)",color:"#fff",fontSize:12,fontWeight:700}}>
+        {showForm?"Cancelar":"+ Nuevo analisis"}
       </button>}
     </div>
-
-    {showForm&&isMaster&&<Card style={{marginBottom:14,border:`1px solid ${ACC}44`}}>
-  <div className="title" style={{fontSize:12,fontWeight:700,color:ACC,marginBottom:14}}>Nuevo análisis</div>
-  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Título</div>
-      <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ej: Perspectivas Q2 2025"/>
-    </div>
-    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Categoría</div>
-      <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
-        <option value="">Sin categoría</option>
-        {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
-      </select>
-    </div>
-    <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Tipo</div>
-      <select value={form.type||"text"} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
-        <option value="text">📝 Texto</option>
-        <option value="pdf">📄 PDF (Google Drive)</option>
-      </select>
-    </div>
-    {(!form.type||form.type==="text")&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
-      <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el análisis aquí..." style={{width:"100%",minHeight:200,background:SRF,border:`1.5px solid ${BOR}`,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
-    </div>}
-    {form.type==="pdf"&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>URL del PDF (Google Drive)</div>
-      <input value={form.pdfUrl||""} onChange={e=>setForm(p=>({...p,pdfUrl:e.target.value}))} placeholder="https://drive.google.com/file/d/ID/preview"/>
-      <div style={{fontSize:10,color:MUT,marginTop:4}}>En Drive: compartir → cualquiera con el enlace → pon: drive.google.com/file/d/ID/preview</div>
-    </div>}
-    <button onClick={handleSave} disabled={saving||!form.title.trim()||((!form.type||form.type==="text")&&!form.content.trim())||(form.type==="pdf"&&!form.pdfUrl?.trim())} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
-      {saving?"Guardando...":"💾 Publicar análisis"}
-    </button>
-  </div>
-</Card>}
-  
-    {loading?<Card style={{textAlign:"center",padding:32}}><div style={{fontSize:32,marginBottom:8}}>⏳</div><div style={{color:MUT}}>Cargando análisis...</div></Card>:
+    {showForm&&isMaster&&<Card style={{marginBottom:14,border:"1px solid "+ACC+"44"}}>
+      <div className="title" style={{fontSize:12,fontWeight:700,color:ACC,marginBottom:14}}>Nuevo analisis</div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Titulo</div>
+          <input value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Titulo del analisis"/>
+        </div>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Categoria</div>
+          <select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+            <option value="">Sin categoria</option>
+            {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Tipo</div>
+          <select value={form.type||"text"} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
+            <option value="text">Texto</option>
+            <option value="pdf">PDF (Google Drive)</option>
+          </select>
+        </div>
+        {(!form.type||form.type==="text")&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>Contenido</div>
+          <textarea value={form.content} onChange={e=>setForm(p=>({...p,content:e.target.value}))} placeholder="Escribe el analisis aqui..." style={{width:"100%",minHeight:200,background:SRF,border:"1.5px solid "+BOR,color:TXT,borderRadius:8,padding:"11px 13px",fontSize:13,fontFamily:"Open Sans,sans-serif",lineHeight:1.7,resize:"vertical"}}/>
+        </div>}
+        {form.type==="pdf"&&<div><div style={{fontSize:11,color:MUT,marginBottom:4}}>URL del PDF (Google Drive)</div>
+          <input value={form.pdfUrl||""} onChange={e=>setForm(p=>({...p,pdfUrl:e.target.value}))} placeholder="https://drive.google.com/file/d/ID/preview"/>
+          <div style={{fontSize:10,color:MUT,marginTop:4}}>En Drive: compartir, cualquiera con el enlace, pon: drive.google.com/file/d/ID/preview</div>
+        </div>}
+        <button onClick={handleSave} disabled={saving||!form.title.trim()} style={{padding:"13px",borderRadius:10,background:"linear-gradient(135deg,"+ACC+",#922b21)",color:"#fff",fontSize:14,fontWeight:700,opacity:saving?.6:1}}>
+          {saving?"Guardando...":"Publicar analisis"}
+        </button>
+      </div>
+    </Card>}
+    {loading?<Card style={{textAlign:"center",padding:32}}><div style={{color:MUT}}>Cargando...</div></Card>:
     analyses.length===0?<Card style={{textAlign:"center",padding:32}}>
-      <div style={{fontSize:32,marginBottom:8}}>📄</div>
-      <div className="title" style={{fontSize:14,fontWeight:700,marginBottom:6}}>Sin análisis publicados</div>
-      <div style={{fontSize:12,color:MUT}}>{isMaster?"Pulsa '+ Nuevo análisis' para publicar el primero":"Próximamente aparecerán análisis aquí"}</div>
+      <div className="title" style={{fontSize:14,fontWeight:700,marginBottom:6}}>Sin analisis publicados</div>
+      <div style={{fontSize:12,color:MUT}}>{isMaster?"Pulsa Nuevo analisis para publicar el primero":"Proximamente apareceran analisis aqui"}</div>
     </Card>:
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {analyses.map(a=>(
-        <Card key={a.id} onClick={()=>setSelected(a)} style={{cursor:"pointer",borderLeft:`3px solid ${ACC}`}}>
+        <Card key={a.id} onClick={()=>setSelected(a)} style={{cursor:"pointer",borderLeft:"3px solid "+ACC}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
             <div style={{flex:1,minWidth:0}}>
               <div className="title" style={{fontSize:14,fontWeight:800,marginBottom:4}}>{a.title}</div>
@@ -2650,10 +2629,8 @@ function AnalysesView({isMaster}){
             </div>
             {a.category&&<span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700,flexShrink:0,marginLeft:8}}>{a.category}</span>}
           </div>
-          <div style={{fontSize:12,color:MUT,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.6}}>
-            {a.content}
-          </div>
-          <div style={{fontSize:11,color:ACC,fontWeight:700,marginTop:8}}>Leer más →</div>
+          <div style={{fontSize:12,color:MUT,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.6}}>{a.content}</div>
+          <div style={{fontSize:11,color:ACC,fontWeight:700,marginTop:8}}>Leer mas</div>
         </Card>
       ))}
     </div>}
