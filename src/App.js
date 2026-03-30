@@ -3042,7 +3042,7 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
         {mode==="perf"&&<>
           {perfLoading?<div style={{fontSize:9,color:MUT,width:180}}>...</div>:
           perfData?<div style={{display:"flex",gap:2,flexShrink:0}}>
-           {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perf[msym]?.[key]}/></div>)}
+           {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perfData?.[key]}/></div>)}
           </div>:<div style={{fontSize:9,color:MUT}}>Sin datos</div>}
         </>}
       </div>
