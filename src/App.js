@@ -924,15 +924,15 @@ function AssetsTab({appData,upd}){
   const [addType,setAddType]=useState(null);
   const [sellA,setSellA]=useState(null);
   const [valA,setValA]=useState(null);
-  const [sellF,setSellF]=useState({qty:"",price:"",date:now()});
+  const [sellF,setSellF]=useState({qty:"",price:"",date:now(),sellType:"venta"});
   const [valF,setValF]=useState({date:now(),value:""});
-  const [aF,setAF]=useState({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:""});
+  const [aF,setAF]=useState({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:"",buyType:"inversion"});
   const [lF,setLF]=useState({name:"",type:LTYPES[0],amount:"",rate:"",startDate:now(),endDate:""});
   const active=(appData.assets||[]).filter(a=>a.status==="active");
   const sold=(appData.assets||[]).filter(a=>a.status==="sold");
-  function addAsset(){if(!aF.name||!aF.buyPrice)return;const bp=parseFloat(aF.buyPrice),cv=parseFloat(aF.cv)||bp;upd(d=>{if(!d.assets)d.assets=[];d.assets.push({name:aF.name,type:aF.type,isin:aF.isin,qty:parseFloat(aF.qty)||1,buyPrice:bp,cv,buyDate:aF.buyDate,id:nid(),status:"active"});});setAF({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:""});setAddType(null);}
+  function addAsset(){if(!aF.name||!aF.buyPrice)return;const bp=parseFloat(aF.buyPrice),cv=parseFloat(aF.cv)||bp;const total=bp*(parseFloat(aF.qty)||1);upd(d=>{if(!d.assets)d.assets=[];d.assets.push({name:aF.name,type:aF.type,isin:aF.isin,qty:parseFloat(aF.qty)||1,buyPrice:bp,cv,buyDate:aF.buyDate,id:nid(),status:"active",buyType:aF.buyType||"inversion"});if((aF.buyType||"inversion")==="inversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:aF.buyDate,type:"entrada",amount:total,concept:aF.name});}});setAF({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:"",buyType:"inversion"});setAddType(null);}
   function addLiab(){if(!lF.name||!lF.amount)return;upd(d=>{if(!d.liabilities)d.liabilities=[];d.liabilities.push({...lF,id:nid(),amount:parseFloat(lF.amount),rate:parseFloat(lF.rate)||0});});setLF({name:"",type:LTYPES[0],amount:"",rate:"",startDate:now(),endDate:""});setAddType(null);}
-  function doSell(){const a=sellA,qty=parseFloat(sellF.qty)||a.qty,price=parseFloat(sellF.price)||a.cv;const cost=a.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost,gp=cost>0?gain/cost:0;const days=a.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(a.buyDate))/86400000)):365;const ann=Math.pow(1+gp,365/days)-1;upd(d=>{const idx=d.assets.findIndex(x=>x.id===a.id);if(idx<0)return;const entry={...d.assets[idx],id:nid(),qty,status:"sold",sellDate:sellF.date,sellPrice:price,cost,proceeds,gain,gp,ann,days};if(qty>=d.assets[idx].qty)Object.assign(d.assets[idx],entry,{id:d.assets[idx].id});else{d.assets[idx].qty-=qty;d.assets.push(entry);}});setSellA(null);}
+  function doSell(){const a=sellA,qty=parseFloat(sellF.qty)||a.qty,price=parseFloat(sellF.price)||a.cv;const cost=a.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost,gp=cost>0?gain/cost:0;const days=a.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(a.buyDate))/86400000)):365;const ann=Math.pow(1+gp,365/days)-1;const sType=sellF.sellType||"venta";upd(d=>{const idx=d.assets.findIndex(x=>x.id===a.id);if(idx<0)return;const entry={...d.assets[idx],id:nid(),qty,status:"sold",sellDate:sellF.date,sellPrice:price,cost,proceeds,gain,gp,ann,days,sellType:sType};if(qty>=d.assets[idx].qty)Object.assign(d.assets[idx],entry,{id:d.assets[idx].id});else{d.assets[idx].qty-=qty;d.assets.push(entry);}if(sType==="desinversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:sellF.date,type:"salida",amount:proceeds,concept:a.name});}});setSellA(null);}
   function doVal(){if(!valF.value)return;const v=parseFloat(valF.value);upd(d=>{if(!d.valHistory)d.valHistory={};const id=valA.id;if(!d.valHistory[id])d.valHistory[id]=[];d.valHistory[id].push({date:valF.date,value:v});d.valHistory[id].sort((a,b)=>a.date.localeCompare(b.date));const a=d.assets.find(x=>x.id===id);if(a)a.cv=v;});setValA(null);}
   function ret(a){const c=a.buyPrice*a.qty,v=a.cv*a.qty;return{abs:v-c,pct:c>0?(v-c)/c:0};}
   const sT=sold.reduce((acc,a)=>({cost:acc.cost+(a.cost||0),proceeds:acc.proceeds+(a.proceeds||0),gain:acc.gain+(a.gain||0)}),{cost:0,proceeds:0,gain:0});
@@ -1012,6 +1012,16 @@ function AssetsTab({appData,upd}){
         {(()=>{const qty=parseFloat(sellF.qty)||sellA.qty,price=parseFloat(sellF.price)||sellA.cv,cost=sellA.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost;const days=sellA.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(sellA.buyDate))/86400000)):365;const ann=(Math.pow(1+(cost>0?gain/cost:0),365/days)-1)*100;return(<div style={{background:SRF,borderRadius:10,padding:14}}><div className="title" style={{fontSize:11,fontWeight:700,color:ACC,marginBottom:10}}>RESULTADO ESTIMADO</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>{[["Coste",f(cost),MUT],["Ingreso",f(proceeds),TXT],["Result.",(gain>=0?"+":"")+f(gain),gc(gain)],["Rentab.",(cost>0?gain/cost*100:0).toFixed(1)+"%",gc(gain)],["Anual.",ann.toFixed(1)+"%",gc(gain)],["Días",days+"d",MUT]].map(([l,v,c])=><div key={l} style={{background:BG,borderRadius:8,padding:"8px 10px"}}><div style={{fontSize:9,color:MUT}}>{l}</div><div style={{fontSize:12,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div></div>)}</div></div>);})()}
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>setSellA(null)} style={{flex:1,padding:"12px",borderRadius:10,background:SRF,color:MUT,fontSize:14}}>Cancelar</button>
+          <div style={{marginBottom:8}}><div style={{fontSize:11,color:MUT,fontWeight:600,marginBottom:6}}>Tipo de venta</div>
+  <div style={{display:"flex",gap:8}}>
+    {[["venta","Venta","Cash entra al balance"],["desinversion","Venta Desinversión","Dinero sale del sistema"]].map(([val,label,desc])=>(
+      <button key={val} onClick={()=>setSellF(p=>({...p,sellType:val}))} style={{flex:1,padding:"10px 8px",borderRadius:8,textAlign:"left",background:(sellF.sellType||"venta")===val?ACC+"22":SRF,border:"1.5px solid "+((sellF.sellType||"venta")===val?ACC:BOR),color:(sellF.sellType||"venta")===val?ACC:MUT}}>
+        <div style={{fontSize:12,fontWeight:700}}>{label}</div>
+        <div style={{fontSize:10,marginTop:2}}>{desc}</div>
+      </button>
+    ))}
+  </div>
+</div>
           <button onClick={doSell} style={{flex:2,padding:"12px",borderRadius:10,background:YLW,color:"#000",fontSize:14}}>✓ Confirmar</button>
         </div>
         <div style={{height:8}}/>
@@ -1099,9 +1109,104 @@ function BalanceTab({appData}){
       ))}
       <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,marginTop:4}}><span style={{fontWeight:700}}>Total</span><span style={{fontWeight:800,fontSize:16,color:RED,fontFamily:"monospace"}}>{f(tL)}</span></div>
     </Card>}
+    <PortfolioPerformance appData={appData}/>
   </div>;
 }
 
+function PortfolioPerformance({appData}){
+  const active=(appData.assets||[]).filter(a=>a.status==="active");
+  const sold=(appData.assets||[]).filter(a=>a.status==="sold");
+  const cashFlows=appData.cashFlows||[];
+
+  // Resultados posiciones actuales
+  const activeResult=active.reduce((s,a)=>{
+    const cost=a.buyPrice*a.qty,val=a.cv*a.qty;
+    return{cost:s.cost+cost,val:s.val+val,gain:s.gain+(val-cost)};
+  },{cost:0,val:0,gain:0});
+
+  // Resultados posiciones vendidas
+  const soldResult=sold.reduce((s,a)=>({cost:s.cost+(a.cost||0),proceeds:s.proceeds+(a.proceeds||0),gain:s.gain+(a.gain||0)}),{cost:0,proceeds:0,gain:0});
+
+  // TIR simplificada - suma ponderada por tiempo
+  const entradas=cashFlows.filter(f=>f.type==="entrada");
+  const salidas=cashFlows.filter(f=>f.type==="salida");
+  const totalEntradas=entradas.reduce((s,f)=>s+f.amount,0);
+  const totalSalidas=salidas.reduce((s,f)=>s+f.amount,0);
+  const valorActual=active.reduce((s,a)=>s+a.cv*a.qty,0);
+  const gananciaTotal=valorActual+totalSalidas-totalEntradas;
+  const rentTotal=totalEntradas>0?(gananciaTotal/totalEntradas)*100:0;
+
+  // Rentabilidad anualizada (TWRR simplificado)
+  let rentAnual=0;
+  if(entradas.length>0){
+    const primerFlujo=entradas.reduce((min,f)=>f.date<min?f.date:min,entradas[0].date);
+    const dias=Math.max(1,Math.round((new Date()-new Date(primerFlujo))/86400000));
+    const anos=dias/365;
+    rentAnual=totalEntradas>0?(Math.pow(1+rentTotal/100,1/anos)-1)*100:0;
+  }
+
+  function fmtP(v){return(v>=0?"+":"")+v.toFixed(2)+"%";}
+
+  return <Card style={{marginBottom:14,border:"1px solid "+ACC+"44"}}>
+    <div className="title" style={{fontSize:11,fontWeight:700,color:ACC,marginBottom:14,textTransform:"uppercase",letterSpacing:".06em"}}>Rentabilidad Cartera</div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+      <Kpi label="Total entradas" value={f(totalEntradas)} color={MUT}/>
+      <Kpi label="Total salidas" value={f(totalSalidas)} color={MUT}/>
+      <Kpi label="Valor actual" value={f(valorActual)} color={gc(valorActual)}/>
+      <Kpi label="Ganancia total" value={f(gananciaTotal)} color={gc(gananciaTotal)}/>
+    </div>
+
+    <div style={{background:gc(rentTotal)+"18",borderRadius:10,padding:14,marginBottom:12,textAlign:"center"}}>
+      <div style={{fontSize:11,color:MUT,marginBottom:4}}>Rentabilidad total</div>
+      <div style={{fontSize:28,fontWeight:900,color:gc(rentTotal),fontFamily:"monospace"}}>{fmtP(rentTotal)}</div>
+      <div style={{fontSize:13,color:gc(rentAnual),fontWeight:700,marginTop:4}}>Anualizada: {fmtP(rentAnual)}</div>
+    </div>
+
+    <div style={{marginBottom:12}}>
+      <div className="title" style={{fontSize:10,color:MUT,fontWeight:700,marginBottom:8}}>POSICIONES ACTUALES</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+        {[["Invertido",f(activeResult.cost),MUT],["Valor",f(activeResult.val),gc(activeResult.gain)],["Resultado",(activeResult.gain>=0?"+":"")+f(activeResult.gain),gc(activeResult.gain)]].map(([l,v,c])=>(
+          <div key={l} style={{background:SRF,borderRadius:8,padding:"8px 10px"}}>
+            <div style={{fontSize:9,color:MUT}}>{l}</div>
+            <div style={{fontSize:12,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div style={{marginBottom:12}}>
+      <div className="title" style={{fontSize:10,color:MUT,fontWeight:700,marginBottom:8}}>POSICIONES VENDIDAS</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+        {[["Coste",f(soldResult.cost),MUT],["Recibido",f(soldResult.proceeds),TXT],["Resultado",(soldResult.gain>=0?"+":"")+f(soldResult.gain),gc(soldResult.gain)]].map(([l,v,c])=>(
+          <div key={l} style={{background:SRF,borderRadius:8,padding:"8px 10px"}}>
+            <div style={{fontSize:9,color:MUT}}>{l}</div>
+            <div style={{fontSize:12,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {cashFlows.length>0&&<div>
+      <div className="title" style={{fontSize:10,color:MUT,fontWeight:700,marginBottom:8}}>FLUJOS DE CAJA</div>
+      {cashFlows.slice(-5).reverse().map((f,i)=>(
+        <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid "+BOR+"22"}}>
+          <div>
+            <div style={{fontSize:11,fontWeight:600}}>{f.concept}</div>
+            <div style={{fontSize:9,color:MUT}}>{f.date}</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:f.type==="entrada"?RED:GRN,fontFamily:"monospace"}}>
+            {f.type==="entrada"?"-":"+"}f({f.amount})
+          </div>
+        </div>
+      ))}
+    </div>}
+
+    {cashFlows.length===0&&<div style={{fontSize:11,color:MUT,textAlign:"center",padding:8}}>
+      Registra Compras Inversión y Ventas Desinversión para calcular rentabilidad
+    </div>}
+  </Card>;
+}
 // ── ADD ASSET SHEET (with Yahoo Finance search) ──────────────────────────────
 function AddAssetSheet({aF,setAF,onAdd,onClose}){
   const [query,setQuery]=useState("");
@@ -1233,7 +1338,17 @@ function AddAssetSheet({aF,setAF,onAdd,onClose}){
       {aF.cv&&aF.buyPrice&&parseFloat(aF.cv)>0&&parseFloat(aF.buyPrice)>0&&parseFloat(aF.cv)!==parseFloat(aF.buyPrice)&&<div style={{background:gc(parseFloat(aF.cv)-parseFloat(aF.buyPrice))+"22",color:gc(parseFloat(aF.cv)-parseFloat(aF.buyPrice)),borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700}}>
         Variación: {((parseFloat(aF.cv)-parseFloat(aF.buyPrice))/parseFloat(aF.buyPrice)*100).toFixed(2)}% desde compra
       </div>}
-      <button onClick={onAdd} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,marginTop:4}}>Añadir activo</button>
+      <div><div style={{fontSize:11,color:MUT,fontWeight:600,marginBottom:5}}>Tipo de compra</div>
+  <div style={{display:"flex",gap:8}}>
+    {[["inversion","Compra Inversión","El dinero viene de fuera"],["compra","Compra","Contra cash del balance"]].map(([val,label,desc])=>(
+      <button key={val} onClick={()=>setAF(p=>({...p,buyType:val}))} style={{flex:1,padding:"10px 8px",borderRadius:8,textAlign:"left",background:(aF.buyType||"inversion")===val?ACC+"22":SRF,border:"1.5px solid "+((aF.buyType||"inversion")===val?ACC:BOR),color:(aF.buyType||"inversion")===val?ACC:MUT}}>
+        <div style={{fontSize:12,fontWeight:700}}>{label}</div>
+        <div style={{fontSize:10,marginTop:2}}>{desc}</div>
+      </button>
+    ))}
+  </div>
+</div>
+         <button onClick={onAdd} style={{padding:"13px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,marginTop:4}}>Añadir activo</button>
       <div style={{height:8}}/>
     </div>
   </BottomSheet>;
