@@ -2971,7 +2971,6 @@ function MembersDrawer({sym,onClose}){
           <div style={{flex:1,fontSize:9,color:MUT,fontWeight:700}}>ACTIVO</div>
           <div style={{width:55,textAlign:"right",fontSize:9,color:MUT,fontWeight:700}}>PRECIO</div>
           {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={pf?.[key]}/></div>)}
-```
         </div>
         {members.map(msym=>{
           const d=prices[msym],pf=perf[msym];
@@ -2982,7 +2981,7 @@ function MembersDrawer({sym,onClose}){
               <div style={{fontSize:10,fontFamily:"monospace"}}>{p}</div>
               {pct!=null&&<div style={{fontSize:8,color:pct>=0?GRN:RED,fontWeight:700}}>{pct>=0?"+":""}{pct.toFixed(1)}%</div>}
             </div>
-            {PERF_PERIODS.map(({key})=><div key={key} style={{width:32,textAlign:"center",flexShrink:0}}><PerfBadge val={pf?.[key]}/></div>)}
+            {PERF_PERIODS.map(({key})=><div key={key} style={{width:32,textAlign:"center",flexShrink:0}}><PerfBadge val={perf[msym]?.[key]}/></div>)}
           </div>;
         })}
       </>}
@@ -3043,7 +3042,7 @@ function AssetRow({item,priceData,perfData,perfLoading,mode,isFirstInGroup,showP
         {mode==="perf"&&<>
           {perfLoading?<div style={{fontSize:9,color:MUT,width:180}}>...</div>:
           perfData?<div style={{display:"flex",gap:2,flexShrink:0}}>
-            {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perf[msym]?.[key]}/></div>)}
+           {PERF_SHORT.map(({key})=><div key={key} style={{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={perf[msym]?.[key]}/></div>)}
           </div>:<div style={{fontSize:9,color:MUT}}>Sin datos</div>}
         </>}
       </div>
