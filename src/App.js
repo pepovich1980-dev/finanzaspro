@@ -291,7 +291,28 @@ export default function App(){
 
   useEffect(()=>{
     const unsub=onAuthStateChanged(auth,async user=>{
-      setFbUser(user);
+      // Auto-snapshot cada lunes
+  useEffect(()=>{
+    if(!appData||!fbUser)return;
+    const today=new Date();
+    if(today.getDay()!==1)return; // solo lunes
+    const key="week-"+today.toISOString().slice(0,10);
+    const snapshots=appData.portfolioSnapshots||[];
+    if(snapshots.find(s=>s.key===key))return; // ya existe
+    const active=(appData.assets||[]).filter(a=>a.status==="active");
+    const valorActual=active.reduce((s,a)=>s+a.cv*a.qty,0);
+    const cashFlows=appData.cashFlows||[];
+    const totalEntradas=cashFlows.filter(f=>f.type==="entrada").reduce((s,f)=>s+f.amount,0);
+    const totalSalidas=cashFlows.filter(f=>f.type==="salida").reduce((s,f)=>s+f.amount,0);
+    const ganancia=valorActual+totalSalidas-totalEntradas;
+    const rentTotal=totalEntradas>0?(ganancia/totalEntradas)*100:0;
+    upd(d=>{
+      if(!d.portfolioSnapshots)d.portfolioSnapshots=[];
+      d.portfolioSnapshots.push({key,date:today.toISOString().slice(0,10),valor:valorActual,entradas:totalEntradas,salidas:totalSalidas,ganancia,rentTotal});
+      d.portfolioSnapshots.sort((a,b)=>a.key.localeCompare(b.key));
+    });
+  },[appData?.assets,fbUser]);
+setFbUser(user);
       if(user){
         const d=await loadUserData(user.uid);
         setAppData(d||freshApp());
@@ -932,7 +953,13 @@ function AssetsTab({appData,upd}){
   const sold=(appData.assets||[]).filter(a=>a.status==="sold");
   function addAsset(){if(!aF.name||!aF.buyPrice)return;const bp=parseFloat(aF.buyPrice),cv=parseFloat(aF.cv)||bp;const total=bp*(parseFloat(aF.qty)||1);upd(d=>{if(!d.assets)d.assets=[];d.assets.push({name:aF.name,type:aF.type,isin:aF.isin,qty:parseFloat(aF.qty)||1,buyPrice:bp,cv,buyDate:aF.buyDate,id:nid(),status:"active",buyType:aF.buyType||"inversion"});if((aF.buyType||"inversion")==="inversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:aF.buyDate,type:"entrada",amount:total,concept:aF.name});}});setAF({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:"",buyType:"inversion"});setAddType(null);}
   function addLiab(){if(!lF.name||!lF.amount)return;upd(d=>{if(!d.liabilities)d.liabilities=[];d.liabilities.push({...lF,id:nid(),amount:parseFloat(lF.amount),rate:parseFloat(lF.rate)||0});});setLF({name:"",type:LTYPES[0],amount:"",rate:"",startDate:now(),endDate:""});setAddType(null);}
-  function doSell(){const a=sellA,qty=parseFloat(sellF.qty)||a.qty,price=parseFloat(sellF.price)||a.cv;const cost=a.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost,gp=cost>0?gain/cost:0;const days=a.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(a.buyDate))/86400000)):365;const ann=Math.pow(1+gp,365/days)-1;const sType=sellF.sellType||"venta";upd(d=>{const idx=d.assets.findIndex(x=>x.id===a.id);if(idx<0)return;const entry={...d.assets[idx],id:nid(),qty,status:"sold",sellDate:sellF.date,sellPrice:price,cost,proceeds,gain,gp,ann,days,sellType:sType};if(qty>=d.assets[idx].qty)Object.assign(d.assets[idx],entry,{id:d.assets[idx].id});else{d.assets[idx].qty-=qty;d.assets.push(entry);}if(sType==="desinversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:sellF.date,type:"salida",amount:proceeds,concept:a.name});}});setSellA(null);}
+  function doSell(){const a=sellA,qty=parseFloat(sellF.qty)||a.qty,price=parseFloat(sellF.price)||a.cv;const cost=a.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost,gp=cost>0?gain/cost:0;const days=a.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(a.buyDate))/86400000)):365;const ann=Math.pow(1+gp,365/days)-1;const sType=sellF.sellType||"venta";upd(d=>{const idx=d.assets.findIndex(x=>x.id===a.id);if(idx<0)return;const entry={...d.assets[idx],id:nid(),qty,status:"sold",sellDate:sellF.date,sellPrice:price,cost,proceeds,gain,gp,ann,days,sellType:sType};if(qty>=d.assets[idx].qty)Object.assign(d.assets[idx],entry,{id:d.assets[idx].id});else{d.assets[idx].qty-=qty;d.assets.push(entry);}if(sType==="desinversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:sellF.date,type:"salida",amount:proceeds,concept:a.name});}
+if(sType==="venta"){
+  // Sumar como cash en activos
+  const cashAsset=d.assets.find(x=>x.type==="Cuenta corriente"&&x.name==="Cash");
+  if(cashAsset){cashAsset.cv+=proceeds/cashAsset.qty;}
+  else{d.assets.push({name:"Cash",type:"Cuenta corriente",isin:"",qty:1,buyPrice:proceeds,cv:proceeds,buyDate:sellF.date,id:nid(),status:"active",buyType:"compra"});}
+}});setSellA(null);}
   function doVal(){if(!valF.value)return;const v=parseFloat(valF.value);upd(d=>{if(!d.valHistory)d.valHistory={};const id=valA.id;if(!d.valHistory[id])d.valHistory[id]=[];d.valHistory[id].push({date:valF.date,value:v});d.valHistory[id].sort((a,b)=>a.date.localeCompare(b.date));const a=d.assets.find(x=>x.id===id);if(a)a.cv=v;});setValA(null);}
   function ret(a){const c=a.buyPrice*a.qty,v=a.cv*a.qty;return{abs:v-c,pct:c>0?(v-c)/c:0};}
   const sT=sold.reduce((acc,a)=>({cost:acc.cost+(a.cost||0),proceeds:acc.proceeds+(a.proceeds||0),gain:acc.gain+(a.gain||0)}),{cost:0,proceeds:0,gain:0});
@@ -1202,9 +1229,42 @@ function PortfolioPerformance({appData}){
       ))}
     </div>}
 
-    {cashFlows.length===0&&<div style={{fontSize:11,color:MUT,textAlign:"center",padding:8}}>
+   {cashFlows.length===0&&<div style={{fontSize:11,color:MUT,textAlign:"center",padding:8}}>
       Registra Compras Inversión y Ventas Desinversión para calcular rentabilidad
     </div>}
+
+    {(appData.portfolioSnapshots||[]).length>1&&<>
+      <div className="title" style={{fontSize:10,color:MUT,fontWeight:700,marginBottom:8,marginTop:12}}>EVOLUCIÓN RENTABILIDAD</div>
+      <Card style={{marginBottom:8,padding:"10px 8px"}}>
+        <div style={{fontSize:10,color:MUT,marginBottom:6}}>Rentabilidad acumulada %</div>
+        <ResponsiveContainer width="100%" height={160}>
+          <LineChart data={(appData.portfolioSnapshots||[]).slice(-52)} margin={{left:-10,right:4,top:4,bottom:0}}>
+            <XAxis dataKey="date" tick={{fill:MUT,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>v.slice(5)}/>
+            <YAxis tick={{fill:MUT,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>v.toFixed(1)+"%"}/>
+            <Tooltip formatter={(v)=>v.toFixed(2)+"%"} contentStyle={{background:CARD,border:"1px solid "+BOR,borderRadius:8}}/>
+            <ReferenceLine y={0} stroke={BOR} strokeDasharray="4 4"/>
+            <Line type="monotone" dataKey="rentTotal" name="Rentab. %" stroke={ACC} strokeWidth={2} dot={{r:2}}/>
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card style={{padding:"10px 8px"}}>
+        <div style={{fontSize:10,color:MUT,marginBottom:6}}>Rentabilidad semanal %</div>
+        <ResponsiveContainer width="100%" height={140}>
+          <BarChart data={(appData.portfolioSnapshots||[]).slice(-52).map((s,i,arr)=>{
+            const prev=i>0?arr[i-1].rentTotal:s.rentTotal;
+            return{...s,rentSemanal:s.rentTotal-prev};
+          })} margin={{left:-10,right:4,top:4,bottom:0}}>
+            <XAxis dataKey="date" tick={{fill:MUT,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>v.slice(5)}/>
+            <YAxis tick={{fill:MUT,fontSize:8}} axisLine={false} tickLine={false} tickFormatter={v=>v.toFixed(1)+"%"}/>
+            <Tooltip formatter={(v)=>v.toFixed(2)+"%"} contentStyle={{background:CARD,border:"1px solid "+BOR,borderRadius:8}}/>
+            <ReferenceLine y={0} stroke={BOR} strokeDasharray="4 4"/>
+            <Bar dataKey="rentSemanal" name="Rentab. semana">
+              {(appData.portfolioSnapshots||[]).slice(-52).map((s,i)=><Cell key={i} fill={s.rentTotal>=(i>0?(appData.portfolioSnapshots||[]).slice(-52)[i-1].rentTotal:s.rentTotal)?GRN:RED}/>)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </>}
   </Card>;
 }
 // ── ADD ASSET SHEET (with Yahoo Finance search) ──────────────────────────────
