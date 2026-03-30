@@ -2970,7 +2970,7 @@ function MembersDrawer({sym,onClose}){
         <div style={{display:"flex",gap:4,padding:"6px 0",borderBottom:`1px solid ${BOR}`,marginBottom:4}}>
           <div style={{flex:1,fontSize:9,color:MUT,fontWeight:700}}>ACTIVO</div>
           <div style={{width:55,textAlign:"right",fontSize:9,color:MUT,fontWeight:700}}>PRECIO</div>
-          {PERF_SHORT.map(({label})=><div key={label} style={{width:36,textAlign:"center",fontSize:9,color:MUT,fontWeight:700,flexShrink:0}}>{label}</div>)}{{width:36,textAlign:"center",flexShrink:0}}><PerfBadge val={pf?.[key]}/></div>)}
+          {PERF_SHORT.map(({label})=><div key={label} style={{width:36,textAlign:"center",fontSize:9,color:MUT,fontWeight:700,flexShrink:0}}>{label}</div>)}
         </div>
         {members.map(msym=>{
           const d=prices[msym],pf=perf[msym];
