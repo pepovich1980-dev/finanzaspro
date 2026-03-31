@@ -980,20 +980,21 @@ if(sType==="venta"){
       <button onClick={()=>setAddType("asset")} style={{width:"100%",padding:"12px",borderRadius:10,background:`linear-gradient(135deg,${ACC},#922b21)`,color:"#fff",fontSize:14,marginBottom:14}}>+ Añadir activo</button>
       {!active.length&&<div style={{textAlign:"center",color:MUT,padding:40}}>Sin activos en cartera</div>}
       {active.map(a=>{const r=ret(a);return(
-        <Card key={a.id} style={{marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-            <div><div className="title" style={{fontSize:15,fontWeight:800}}>{a.name}</div><div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}><span style={{background:ACC+"22",color:ACC,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:700}}>{a.type}</span>{a.isin&&<span style={{background:MUT+"22",color:MUT,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:700}}>{a.isin}</span>}</div></div>
-            <div style={{textAlign:"right"}}><div style={{fontSize:20,fontWeight:800,color:gc(r.pct),fontFamily:"monospace"}}>{(r.pct*100).toFixed(1)}%</div><div style={{fontSize:12,color:gc(r.abs),fontFamily:"monospace"}}>{r.abs>=0?"+":""}{f(r.abs)}</div></div>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-            {[["TÍTULOS",a.qty],["COMPRA",f(a.buyPrice)],["ACTUAL",f(a.cv)]].map(([l,v])=>(
-              <div key={l} style={{background:SRF,borderRadius:8,padding:"9px 10px"}}><div className="title" style={{fontSize:9,color:MUT,fontWeight:700}}>{l}</div><div style={{fontSize:13,fontWeight:700,fontFamily:"monospace"}}>{v}</div></div>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{setValA(a);setValF({date:now(),value:""}); }} style={{flex:1,padding:"8px 0",borderRadius:8,background:GRN+"22",color:GRN,fontSize:12}}>📊 Valorar</button>
-            <button onClick={()=>{setSellA(a);setSellF({qty:"",price:a.cv,date:now()});}} style={{flex:1,padding:"8px 0",borderRadius:8,background:YLW+"22",color:YLW,fontSize:12}}>💸 Vender</button>
-            <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{flex:1,padding:"8px 0",borderRadius:8,background:RED+"22",color:RED,fontSize:12}}>✕</button>
+        <Card key={a.id} style={{marginBottom:6,padding:"10px 12px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.name}</div>
+              <div style={{fontSize:10,color:MUT,marginTop:1}}>{f(a.buyPrice)} → <span style={{color:gc(r.abs),fontWeight:700}}>{f(a.cv)}</span></div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontSize:13,fontWeight:800,color:gc(r.pct),fontFamily:"monospace"}}>{(r.pct*100).toFixed(1)}%</div>
+              <div style={{fontSize:11,color:gc(r.abs),fontFamily:"monospace"}}>{r.abs>=0?"+":""}{f(r.abs)}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              <button onClick={()=>{setValA(a);setValF({date:now(),value:""}); }} style={{padding:"4px 8px",borderRadius:6,background:GRN+"22",color:GRN,fontSize:10,fontWeight:700}}>Val</button>
+              <button onClick={()=>{setSellA(a);setSellF({qty:"",price:a.cv,date:now(),sellType:"venta"});}} style={{padding:"4px 8px",borderRadius:6,background:YLW+"22",color:YLW,fontSize:10,fontWeight:700}}>Vnd</button>
+              <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{padding:"4px 8px",borderRadius:6,background:RED+"22",color:RED,fontSize:10,fontWeight:700}}>✕</button>
+            </div>
           </div>
         </Card>
       );})}
@@ -1014,8 +1015,10 @@ if(sType==="venta"){
               <div key={l} style={{background:SRF,borderRadius:8,padding:"7px 9px"}}><div className="title" style={{fontSize:9,color:MUT,fontWeight:700}}>{l}</div><div style={{fontSize:11,fontWeight:700,color:c,fontFamily:"monospace"}}>{v}</div></div>
             ))}
           </div>
-        </Card>
-      ))}
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
+            <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{padding:"6px 12px",borderRadius:8,background:RED+"22",color:RED,fontSize:11,fontWeight:700}}>Eliminar</button>
+          </div>
+        </Card>))}
     </>}
     {sec==="liabilities"&&<>
       <button onClick={()=>setAddType("liab")} style={{width:"100%",padding:"12px",borderRadius:10,background:RED,color:"#fff",fontSize:14,marginBottom:14}}>+ Añadir pasivo</button>
