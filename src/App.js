@@ -291,7 +291,6 @@ export default function App(){
 
   useEffect(()=>{
     const unsub=onAuthStateChanged(auth,async user=>{
-    ;
 setFbUser(user);
       if(user){
         const d=await loadUserData(user.uid);
@@ -318,7 +317,34 @@ if(user.uid===MASTER_UID) setMasterMode(true);
     return unsub;
   },[]);
 
-  const upd=useCallback((fn)=>{
+  // Auto-snapshot domingo
+  useEffect(()=>{
+    if(!appData||!fbUser||viewingUser)return;
+    const today=new Date();
+    if(today.getDay()!==0)return; // solo domingo
+    const key="week-"+today.toISOString().slice(0,10);
+    const snapshots=appData.portfolioSnapshots||[];
+    if(snapshots.find(s=>s.key===key))return;
+    const active=(appData.assets||[]).filter(a=>a.status==="active");
+    const valorActual=active.reduce((s,a)=>s+a.cv*a.qty,0);
+    const cashFlows=appData.cashFlows||[];
+    const totalEntradas=cashFlows.filter(f=>f.type==="entrada").reduce((s,f)=>s+f.amount,0);
+    const totalSalidas=cashFlows.filter(f=>f.type==="salida").reduce((s,f)=>s+f.amount,0);
+    const ganancia=valorActual+totalSalidas-totalEntradas;
+    const rentTotal=totalEntradas>0?(ganancia/totalEntradas)*100:0;
+    const base100=snapshots.length===0?100:100*(1+rentTotal/100);
+    setAppData(prev=>{
+      const next=JSON.parse(JSON.stringify(prev));
+      if(!next.portfolioSnapshots)next.portfolioSnapshots=[];
+      next.portfolioSnapshots.push({key,date:today.toISOString().slice(0,10),valor:valorActual,entradas:totalEntradas,salidas:totalSalidas,ganancia,rentTotal,base100});
+      next.portfolioSnapshots.sort((a,b)=>a.key.localeCompare(b.key));
+      saveUserData(fbUser.uid,next);
+      return next;
+    });
+  },[appData?.portfolioSnapshots?.length,fbUser?.uid]);
+
+  const upd=useCallback
+((fn)=>{
     // Read-only mode when master is viewing another user
     if(viewingUser){return;}
     setAppData(prev=>{
@@ -931,7 +957,7 @@ function AssetsTab({appData,upd}){
   const [lF,setLF]=useState({name:"",type:LTYPES[0],amount:"",rate:"",startDate:now(),endDate:""});
   const active=(appData.assets||[]).filter(a=>a.status==="active");
   const sold=(appData.assets||[]).filter(a=>a.status==="sold");
-  function addAsset(){if(!aF.name||!aF.buyPrice)return;const bp=parseFloat(aF.buyPrice),cv=parseFloat(aF.cv)||bp;const total=bp*(parseFloat(aF.qty)||1);upd(d=>{if(!d.assets)d.assets=[];d.assets.push({name:aF.name,type:aF.type,isin:aF.isin,qty:parseFloat(aF.qty)||1,buyPrice:bp,cv,buyDate:aF.buyDate,id:nid(),status:"active",buyType:aF.buyType||"inversion"});if((aF.buyType||"inversion")==="inversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:aF.buyDate,type:"entrada",amount:total,concept:aF.name});}});setAF({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:"",buyType:"inversion"});setAddType(null);}
+  function addAsset(){if(!aF.name||!aF.buyPrice)return;const bp=parseFloat(aF.buyPrice),cv=parseFloat(aF.cv)||bp;const total=bp*(parseFloat(aF.qty)||1);upd(d=>{if(!d.assets)d.assets=[];d.assets.push({name:aF.name,type:aF.type,isin:aF.isin,qty:parseFloat(aF.qty)||1,buyPrice:bp,cv,buyDate:aF.buyDate,id:nid(),status:"active",buyType:aF.buyType||"inversion"});if((aF.buyType||"inversion")==="inversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:aF.buyDate,type:"entrada",amount:total,concept:aF.name});}if((aF.buyType||"inversion")==="compra"){const cashAsset=d.assets.find(x=>x.type==="Cuenta corriente"&&x.name==="Cash");if(cashAsset){cashAsset.cv=Math.max(0,cashAsset.cv-total/cashAsset.qty);}}});;setAF({name:"",type:ATYPES[0],isin:"",qty:"1",buyPrice:"",buyDate:now(),cv:"",buyType:"inversion"});setAddType(null);}
   function addLiab(){if(!lF.name||!lF.amount)return;upd(d=>{if(!d.liabilities)d.liabilities=[];d.liabilities.push({...lF,id:nid(),amount:parseFloat(lF.amount),rate:parseFloat(lF.rate)||0});});setLF({name:"",type:LTYPES[0],amount:"",rate:"",startDate:now(),endDate:""});setAddType(null);}
   function doSell(){const a=sellA,qty=parseFloat(sellF.qty)||a.qty,price=parseFloat(sellF.price)||a.cv;const cost=a.buyPrice*qty,proceeds=price*qty,gain=proceeds-cost,gp=cost>0?gain/cost:0;const days=a.buyDate?Math.max(1,Math.round((new Date(sellF.date)-new Date(a.buyDate))/86400000)):365;const ann=Math.pow(1+gp,365/days)-1;const sType=sellF.sellType||"venta";upd(d=>{const idx=d.assets.findIndex(x=>x.id===a.id);if(idx<0)return;const entry={...d.assets[idx],id:nid(),qty,status:"sold",sellDate:sellF.date,sellPrice:price,cost,proceeds,gain,gp,ann,days,sellType:sType};if(qty>=d.assets[idx].qty)Object.assign(d.assets[idx],entry,{id:d.assets[idx].id});else{d.assets[idx].qty-=qty;d.assets.push(entry);}if(sType==="desinversion"){if(!d.cashFlows)d.cashFlows=[];d.cashFlows.push({date:sellF.date,type:"salida",amount:proceeds,concept:a.name});}
 if(sType==="venta"){
@@ -1352,7 +1378,7 @@ function AddAssetSheet({aF,setAF,onAdd,onClose}){
           <div style={{fontSize:11,color:MUT,fontWeight:600}}>Ticker / ISIN</div>
           {aF.isin&&<button onClick={()=>fetchCurrentPrice(aF.isin)} disabled={fetchingPrice} style={{fontSize:10,background:ACC+"22",color:ACC,padding:"3px 8px",borderRadius:6,fontWeight:700}}>{fetchingPrice?"⏳ Buscando...":"🔄 Obtener precio"}</button>}
         </div>
-        <input value={aF.isin} onChange={e=>setAF(p=>({...p,isin:e.target.value}))} placeholder="AAPL, SAN.MC, ES0128520006..."/>
+        <input value={aF.isin} onChange={e=>setAF(p=>({...p,isin:e.target.value}))} onBlur={e=>{if(e.target.value.trim())fetchCurrentPrice(e.target.value.trim());}} placeholder="AAPL, SAN.MC, ES0128520006..."/>
         <div style={{fontSize:10,color:MUT,marginTop:3}}>Ticker Yahoo Finance para actualizar precios automáticamente</div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
