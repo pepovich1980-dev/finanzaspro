@@ -1087,14 +1087,14 @@ function BalanceGroupTab({appData,upd}){
         </button>
       ))}
     </div>
-    {subTab==="balance"&&<BalanceTab appData={appData}/>}
+    {subTab==="balance"&&<BalanceTab appData={appData} upd={upd}/>}
     {subTab==="assets" &&<AssetsTab  appData={appData} upd={upd}/>}
     {subTab==="wealth" &&<WealthTab  appData={appData} upd={upd}/>}
   </div>;
 }
 
 // ── BALANCE ───────────────────────────────────────────────────────────────────
-function BalanceTab({appData}){
+function BalanceTab({appData,upd}){
   const active=(appData.assets||[]).filter(a=>a.status==="active");
   const tA=active.reduce((s,a)=>s+a.cv*a.qty,0);
   const tL=(appData.liabilities||[]).reduce((s,l)=>s+l.amount,0);
@@ -1146,7 +1146,7 @@ function BalanceTab({appData}){
   </div>;
 }
 
-function PortfolioPerformance({appData}){
+function PortfolioPerformance({appData,upd}){
   const active=(appData.assets||[]).filter(a=>a.status==="active");
   const sold=(appData.assets||[]).filter(a=>a.status==="sold");
   const cashFlows=appData.cashFlows||[];
