@@ -1241,6 +1241,8 @@ function PortfolioPerformance({appData,upd}){
 
     <button onClick={async()=>{
       const active=(appData.assets||[]).filter(a=>a.status==="active"&&a.isin&&a.buyDate);
+      console.log("Activos con ticker:",active.map(a=>({name:a.name,isin:a.isin,buyDate:a.buyDate})));
+      if(!active.length){console.log("Sin activos con ticker y fecha");return;}
       if(!active.length)return;
       const weeklyPrices={};
       for(const asset of active){
