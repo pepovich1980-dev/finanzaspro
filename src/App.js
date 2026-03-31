@@ -1239,6 +1239,36 @@ function PortfolioPerformance({appData}){
       Registra Compras Inversión y Ventas Desinversión para calcular rentabilidad
     </div>}
 
+    <button onClick={async()=>{
+      const active=(appData.assets||[]).filter(a=>a.status==="active"&&a.isin&&a.buyDate);
+      if(!active.length)return;
+      const weeklyPrices={};
+      for(const asset of active){
+        try{
+          const res=await fetch("/api/market?symbols="+encodeURIComponent(asset.isin)+"&mode=weekly_history&start="+asset.buyDate);
+          if(res.ok){const d=await res.json();weeklyPrices[asset.isin]={prices:d.prices||[],qty:asset.qty,buyPrice:asset.buyPrice,buyDate:asset.buyDate};}
+        }catch(e){}
+      }
+      if(Object.keys(weeklyPrices).length>0){
+        const allDates=new Set();
+        Object.values(weeklyPrices).forEach(({prices})=>prices.forEach(p=>allDates.add(p.date)));
+        const sortedDates=[...allDates].sort();
+        const newSnapshots=sortedDates.map(date=>{
+          let valor=0,entradas=0;
+          Object.values(weeklyPrices).forEach(({prices,qty,buyPrice,buyDate})=>{
+            if(date<buyDate)return;
+            const pp=prices.find(p=>p.date===date)||prices.filter(p=>p.date<=date).slice(-1)[0];
+            if(pp){valor+=pp.close*qty;entradas+=buyPrice*qty;}
+          });
+          const ganancia=valor-entradas;
+          const rentTotal=entradas>0?(ganancia/entradas)*100:0;
+          return{key:"week-"+date,date,valor,entradas,salidas:0,ganancia,rentTotal};
+        }).filter(s=>s.valor>0);
+        upd(d=>{d.portfolioSnapshots=newSnapshots;});
+      }
+    }} style={{width:"100%",padding:"10px",borderRadius:9,background:ACC+"22",color:ACC,border:"1px solid "+ACC+"44",fontSize:12,fontWeight:700,marginBottom:12}}>
+      Cargar historico retroactivo
+    </button>
     {(appData.portfolioSnapshots||[]).length>1&&<>
       <div className="title" style={{fontSize:10,color:MUT,fontWeight:700,marginBottom:8,marginTop:12}}>EVOLUCIÓN RENTABILIDAD</div>
       <Card style={{marginBottom:8,padding:"10px 8px"}}>
