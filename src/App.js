@@ -1142,7 +1142,7 @@ function BalanceTab({appData}){
       ))}
       <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,marginTop:4}}><span style={{fontWeight:700}}>Total</span><span style={{fontWeight:800,fontSize:16,color:RED,fontFamily:"monospace"}}>{f(tL)}</span></div>
     </Card>}
-    <PortfolioPerformance appData={appData}/>
+    <PortfolioPerformance appData={appData} upd={upd}/>
   </div>;
 }
 
