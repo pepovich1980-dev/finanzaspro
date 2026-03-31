@@ -291,27 +291,7 @@ export default function App(){
 
   useEffect(()=>{
     const unsub=onAuthStateChanged(auth,async user=>{
-      // Auto-snapshot cada lunes
-  useEffect(()=>{
-    if(!appData||!fbUser)return;
-    const today=new Date();
-    if(today.getDay()!==1)return; // solo lunes
-    const key="week-"+today.toISOString().slice(0,10);
-    const snapshots=appData.portfolioSnapshots||[];
-    if(snapshots.find(s=>s.key===key))return; // ya existe
-    const active=(appData.assets||[]).filter(a=>a.status==="active");
-    const valorActual=active.reduce((s,a)=>s+a.cv*a.qty,0);
-    const cashFlows=appData.cashFlows||[];
-    const totalEntradas=cashFlows.filter(f=>f.type==="entrada").reduce((s,f)=>s+f.amount,0);
-    const totalSalidas=cashFlows.filter(f=>f.type==="salida").reduce((s,f)=>s+f.amount,0);
-    const ganancia=valorActual+totalSalidas-totalEntradas;
-    const rentTotal=totalEntradas>0?(ganancia/totalEntradas)*100:0;
-    upd(d=>{
-      if(!d.portfolioSnapshots)d.portfolioSnapshots=[];
-      d.portfolioSnapshots.push({key,date:today.toISOString().slice(0,10),valor:valorActual,entradas:totalEntradas,salidas:totalSalidas,ganancia,rentTotal});
-      d.portfolioSnapshots.sort((a,b)=>a.key.localeCompare(b.key));
-    });
-  },[appData?.assets,fbUser]);
+    ;
 setFbUser(user);
       if(user){
         const d=await loadUserData(user.uid);
