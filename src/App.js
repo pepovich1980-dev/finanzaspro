@@ -1336,23 +1336,21 @@ function AddAssetSheet({aF,setAF,onAdd,onClose}){
     setSearching(false);
   }
 
-  async function fetchCurrentPrice(ticker){
+ async function fetchCurrentPrice(ticker){
     if(!ticker) return;
     setFetchingPrice(true);
     try{
-      const url=`https://api.allorigins.win/raw?url=${encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(ticker)+"?interval=1d&range=1d")}`;
-      const res=await fetch(url,{signal:AbortSignal.timeout(6000)});
+      const res=await fetch("/api/market?symbols="+encodeURIComponent(ticker));
       if(res.ok){
         const data=await res.json();
-        const price=data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        const price=data[ticker]?.price;
         if(price&&price>0){
           setAF(p=>({...p,cv:String(Math.round(price*100)/100),buyPrice:p.buyPrice||String(Math.round(price*100)/100)}));
         }
       }
-    }catch(e){}
+    }catch(e){console.error("fetchCurrentPrice error:",e);}
     setFetchingPrice(false);
   }
-
   function selectResult(r){
     setAF(p=>({...p,
       name:r.name||r.ticker,
