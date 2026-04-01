@@ -912,7 +912,8 @@ function ChartsTab({bud,cats}){
       <Card>
         <div className="title" style={{fontSize:11,fontWeight:700,color:ACC,marginBottom:14}}>REAL VS PRESUPUESTO</div>
         <ResponsiveContainer width="100%" height={200}><LineChart data={monthly} margin={M}><XAxis dataKey="label" tick={TS} axisLine={false} tickLine={false}/><YAxis tick={{fill:MUT,fontSize:9}} axisLine={false} tickLine={false} tickFormatter={fk}/><Tooltip content={<TipComp/>}/><Line type="monotone" dataKey="iP" name="Ingr.Pres" stroke={GRN} strokeDasharray="5 4" dot={false} strokeWidth={1.5}/><Line type="monotone" dataKey="iR" name="Ingr.Real" stroke={GRN} strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="eP" name="Gasto.Pres" stroke={RED} strokeDasharray="5 4" dot={false} strokeWidth={1.5}/><Line type="monotone" dataKey="eR" name="Gasto.Real" stroke={RED} strokeWidth={2} dot={{r:3}}/></LineChart></ResponsiveContainer>
-      </Card>
+     </Card>
+      );})}
     </>}
     {view==="categories"&&<>
       <Card style={{marginBottom:14}}>
@@ -984,7 +985,7 @@ if(sType==="venta"){
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.name}</div>
-              <div style={{fontSize:10,color:MUT,marginTop:1}}>{f(a.buyPrice)} → <span style={{color:gc(r.abs),fontWeight:700}}>{f(a.cv)}</span></div>
+              <div style={{fontSize:10,color:MUT,marginTop:1}}>{f(a.buyPrice)} &rarr; <span style={{color:gc(r.abs),fontWeight:700}}>{f(a.cv)}</span></div>
             </div>
             <div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:13,fontWeight:800,color:gc(r.pct),fontFamily:"monospace"}}>{(r.pct*100).toFixed(1)}%</div>
@@ -993,11 +994,11 @@ if(sType==="venta"){
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
               <button onClick={()=>{setValA(a);setValF({date:now(),value:""}); }} style={{padding:"4px 8px",borderRadius:6,background:GRN+"22",color:GRN,fontSize:10,fontWeight:700}}>Val</button>
               <button onClick={()=>{setSellA(a);setSellF({qty:"",price:a.cv,date:now(),sellType:"venta"});}} style={{padding:"4px 8px",borderRadius:6,background:YLW+"22",color:YLW,fontSize:10,fontWeight:700}}>Vnd</button>
-              <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{padding:"4px 8px",borderRadius:6,background:RED+"22",color:RED,fontSize:10,fontWeight:700}}>✕</button>
+              <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{padding:"4px 8px",borderRadius:6,background:RED+"22",color:RED,fontSize:10,fontWeight:700}}>X</button>
             </div>
           </div>
         </Card>
-      );})}
+                  );})}
     </>}
     {sec==="sold"&&<>
       {sold.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -1016,7 +1017,17 @@ if(sType==="venta"){
             ))}
           </div>
           <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-            <button onClick={()=>upd(d=>{d.assets=d.assets.filter(x=>x.id!==a.id);})} style={{padding:"6px 12px",borderRadius:8,background:RED+"22",color:RED,fontSize:11,fontWeight:700}}>Eliminar</button>
+            <button onClick={()=>upd(d=>{
+  // Revertir efectos de la venta
+  if(a.sellType==="desinversion"&&a.proceeds){
+    d.cashFlows=(d.cashFlows||[]).filter(cf=>!(cf.type==="salida"&&cf.concept===a.name&&Math.abs(cf.amount-a.proceeds)<1));
+  }
+  if(a.sellType==="venta"||!a.sellType){
+    const cashAsset=d.assets.find(x=>x.type==="Cuenta corriente"&&x.name==="Cash");
+    if(cashAsset&&a.proceeds){cashAsset.cv=Math.max(0,cashAsset.cv-(a.proceeds/cashAsset.qty));}
+  }
+  d.assets=d.assets.filter(x=>x.id!==a.id);
+})} style={{padding:"6px 12px",borderRadius:8,background:RED+"22",color:RED,fontSize:11,fontWeight:700}}>Eliminar</button>
           </div>
         </Card>))}
     </>}
